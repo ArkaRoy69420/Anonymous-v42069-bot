@@ -66,9 +66,7 @@ module.exports = {
                 interaction.editReply({ embeds: [AmountIs0] });
 
                 return;
-            }
-
-            else if (amount > userProfile.balance) {
+            } else if (amount > userProfile.balance) {
                 const amountGreaterThanMaxAmount = new EmbedBuilder()
                 .setTitle('You are poorer!')
                 .setDescription('You don\'t have that much moni in your balance!')
@@ -78,9 +76,7 @@ module.exports = {
                 interaction.editReply({ embeds: [amountGreaterThanMaxAmount] });
 
                 return;
-            }
-
-            else if (amount > 3000000) {
+            } else if (amount > 3000000) {
                 const amountGreaterThanBalance = new EmbedBuilder()
                 .setTitle('Maximum amount exceeded... ')
                 .setDescription('You can\'t bet more than 3,000,000')
@@ -102,7 +98,7 @@ module.exports = {
                 }
             }
 
-            if (chance <= 50) {
+            if (chance <= 45) {
                 userProfile.balance = userProfile.balance + AmountWin;
 
                 await userProfile.save();
@@ -114,9 +110,7 @@ module.exports = {
                 .setFooter({ text: `New Balance: ${userProfile.balance}`});
 
                 interaction.editReply({ embeds: [rewardEmbed] });
-            }
-
-            else if (chance > 50) {
+            } else {
                 const rewardEmbed = new EmbedBuilder()
                 .setTitle('You lose!')
                 .setColor('Red')

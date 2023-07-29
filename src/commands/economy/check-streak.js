@@ -23,6 +23,7 @@ module.exports = {
     ],
     callback: async (client, interaction) => {
         const targetUser = interaction.options.get('check-streak')?.value || interaction.member.id; 
+        const targetUserName = interaction.options.get('check-streak')?.user || interaction.user;
         try {
             await interaction.deferReply();
             
@@ -36,24 +37,13 @@ module.exports = {
                 }
             }
 
-            let streakEmbed; 
-            if (targetUser !== interaction.member.id) {
-                streakEmbed = new EmbedBuilder()
-                .setTitle(`${targetUser.user.username}'s daily streak`)
-                .setColor('Blue')
-                .addFields({ name: 'Streak', value: `${userProfile.streak}` });
-
-                interaction.editReply({ embeds: [streakEmbed] });
-            } else if (targetUser == interaction.member.id) {
-                streakEmbed = new EmbedBuilder()
-                .setTitle(`${interaction.user.username}'s daily streak`)
-                .setColor('Blue')
-                .addFields({ name: 'Streak', value: `${userProfile.streak}` });
-                
-                interaction.editReply({ embeds: [streakEmbed] });
-            }
+            let streakEmbed = new EmbedBuilder()
+            .setTitle(`${targetUserName.username}'s daily streak`)
+            .setColor('Blue')
+            .addFields({ name: 'Streak', value: `${userProfile.streak}` });
+            interaction.editReply({ embeds: [streakEmbed] });
         } catch (err) {
             console.error(`Error in check-streak file. Error:\n${err}`);
         }
     }
-}
+} 

@@ -1,5 +1,6 @@
 const { EmbedBuilder } = require('discord.js');
 const UserProfile = require('../../schemas/UserProfile');
+const { NewUserProfileEmbed } = require('../../../command utility/MakeNewUserProfile');
 
 module.exports = {    
     name: 'daily',
@@ -10,9 +11,9 @@ module.exports = {
         const dailyAmount = 10000;
 
         if (!interaction.inGuild()) {
-            interaction.reply({
+            await interaction.reply({
                 content: "This command can only be used in servers!",
-                ephmeral: true,
+                ephemeral: true,
             });
             return;
         }
@@ -37,25 +38,36 @@ module.exports = {
                 }
             } else {
                 userProfile = new UserProfile({ userID: interaction.member.id });
+                interaction.editReply({ embeds: [NewUserProfileEmbed(client)] });
+                await userProfile.save();
+                return;
             }
-            
+            // calculation if the user has run /daily ever before
+            let firstDaily = userProfile.streak === 0 ? true : false;
+
             // Streak calculation
-            const lastCollectedDate = userProfile.lastDailyCollected;
             const oneDay = 24 * 60 * 60 * 1000; // Milliseconds in a day
-            const currentStreak = (Date.now() - lastCollectedDate) / oneDay === 1 ? userProfile.streak + 1 : 1;
+            if ((Date.now() - userProfile.lastDailyCollected)/oneDay >= 1 && (Date.now() - userProfile.lastDailyCollected)/oneDay < 2) {
+                userProfile.streak = userProfile.streak + 1;
+            } else if (Date.now() - userProfile.lastDailyCollected >= 2) {
+                userProfile.streak = 1;
+            }
 
-          userProfile.balance += dailyAmount;
-          userProfile.lastDailyCollected = new Date();
-          userProfile.streak = currentStreak;
+            userProfile.balance += dailyAmount;
+            userProfile.lastDailyCollected = new Date();
+            await userProfile.save();
 
-          await userProfile.save();
+            const dailyRewardEmbed = new EmbedBuilder()
+            .setTitle('Your daily reward')
+            .setColor('Aqua')
+            .addFields({ name: `Amount collected:`, value: `💷${dailyAmount}` })
+            .setFooter({ text: `Streak: ${userProfile.streak}` });
 
-          const dailyRewardEmbed = new EmbedBuilder()
-          .setTitle('Your daily reward')
-          .setColor('Aqua')
-          .addFields({ name: `Amount collected:`, value: `💷${dailyAmount}` })
-          .setFooter({ text: `Streak: ${currentStreak}` });
-          interaction.editReply({ embeds: [dailyRewardEmbed] });
+            interaction.followUp({ embeds: [dailyRewardEmbed] });
+
+            if (!firstDaily) {
+                interaction.editReply({ content: 'You did not run daily for 2 or more days. Therefore, you lost your streak.', ephemeral: true });
+            }
         } catch (error) {
             console.error(`Error in daily.js. error\n${error}`);
         }

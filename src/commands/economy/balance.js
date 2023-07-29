@@ -1,14 +1,10 @@
-
+require('dotenv/config');
 const { Interaction, Client, EmbedBuilder, ApplicationCommandOptionType } = require('discord.js');
 const UserProfile = require('../../schemas/UserProfile');
 const { NewUserProfileEmbed, NO_userProfile }= require('../../../command utility/MakeNewUserProfile');
+const emojiHandler = require('../../../command utility/handleEmojis');
 
 module.exports = {
-    /** 
-     * @param {Client} client
-     * @param {Interaction} interaction
-    */
-
     deleted: false,
     name: 'balance',
     description: 'Check your or another user\'s streak.',
@@ -22,8 +18,15 @@ module.exports = {
             type: ApplicationCommandOptionType.User
         }
     ],
+    /** 
+     * @param {Client} client
+     * @param {Interaction} interaction
+     */
     callback: async (client, interaction) => {
         const targetUser = interaction.options.get('target-user')?.value || interaction.member.id; 
+        const targetUserName = interaction.options.get('target-user')?.user || interaction.user;
+        const pepeMoneyRain = await emojiHandler(client, '1134432049852321854'); // the right one
+
         try {
             await interaction.deferReply();
             
@@ -32,44 +35,23 @@ module.exports = {
                 if (targetUser == interaction.member.id) {
                     userProfile = new UserProfile({ userID: targetUser });
                     interaction.editReply({ embeds: [NewUserProfileEmbed(client)] });
+                    await userProfile.save();
+                    return;
                 } else {
                     interaction.editReply({ embeds: [NO_userProfile()] })
+                    return;
                 }
             }
 
-            let balanceEmbed;
-            if (targetUser == interaction.member.id) {
-                balanceEmbed = new EmbedBuilder()
-                .setTitle(`${interaction.user.username}'s balance`)
-                .setColor('Blue')
-                .setDescription(`Your Balance:`)
-                .addFields(
-                    {
-                        name: 'Pocket',
-                      value: `${userProfile.balance}`
-                    },
-                    {
-                        name: 'Bank',
-                        value: `${userProfile.bank}`
-                    },
-                );
-            } else {
-                const { bank: { max } } = UserProfile.schema.paths;
-                balanceEmbed = new EmbedBuilder()
-                .setTitle(`${targetUser}'s balance`)
-                .setColor('Blue')
-                .setDescription(`Your Balance:`)
-                .addFields(
-                    {
-                        name: 'Pocket',
-                        value: `💷${userProfile.balance}`
-                    },
-                    {
-                        name: '🏦Bank',
-                     value: `💷${userProfile.bank}/${max}`
-                    },
-                );
-            }
+            const bankMax = await userProfile.schema.paths.bank.options.max;
+            balanceEmbed = new EmbedBuilder()
+            .setTitle(`${targetUserName.username}'s balance`)
+            .setColor('Blue')
+            .setDescription(`Balance:`)
+            .addFields(
+                { name: `${pepeMoneyRain} Pocket`, value: `💷${userProfile.balance}` },
+                { name: '🏦 Bank', value: `💷${userProfile.bank}/${bankMax}` },
+            );
             interaction.editReply({ embeds: [balanceEmbed] });
         } catch (err) {
             console.error(`Error in balance.js file. Error:\n${err}`);
